@@ -3,287 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>クラウド同期メモ (ヘッダーアクション集約版)</title>
+    <title>CodeVault v2 - AIオートタグ搭載</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* ーーー カラーパレット定義 ーーー */
+        /* カラーパレット（CodeVaultテーマ継続） */
         :root {
-            --primary-color: #008673;      /* メイングリーン */
-            --primary-dark: #003d34;       /* ディープグリーン */
-            --accent-color: #fabf00;       /* イエローゴールド */
-            --bg-color: #f2faf9;           /* 全体背景 */
-            --form-bg-color: #fff9e5;      /* フォーム背景（薄いイエロー） */
-            --card-color: #ffffff;         /* カード背景 */
-            --text-main: #2e2e2e;          /* メイン文字 */
-            --text-sub: #585858;           /* 副テキスト */
-            --border-color: #d5d5d5;       /* 枠線 */
-            --body-bg-color: #f8f8f8;       /* アコーディオン内部背景 */
-            --danger-color: #d9534f;       /* 削除ボタン用（マイルドな赤） */
+            --bg-main: #1e2524;
+            --bg-container: #26302e;
+            --bg-input: #19201f;
+            --primary: #008673;
+            --primary-hover: #00a48d;
+            --primary-dark: #003d34;
+            --accent: #fabf00;
+            --danger: #ff5c5c;
+            --text-main: #ffffff;
+            --text-sub: #a0b2b0;
+            --border: #384745;
+            --card-memo: #1c2322;
         }
 
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--bg-main);
             color: var(--text-main);
-            margin: 0;
-            padding: 20px;
+            padding: 40px 20px;
             display: flex;
             justify-content: center;
+            min-height: 100vh;
         }
-        .container {
-            width: 100%;
-            max-width: 720px; /* 領域をわずかに拡張 */
-        }
-        h1 {
-            text-align: center;
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: var(--primary-color);
-        }
+        .container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 25px; }
         
-        /* フォームエリア */
-        .memo-form {
-            background: var(--form-bg-color);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-            border: 1px solid var(--border-color);
-        }
-        textarea {
-            width: 100%;
-            height: 120px;
-            padding: 12px;
-            box-sizing: border-box;
-            border: 1px solid var(--border-color);
-            background-color: var(--card-color);
-            color: var(--text-main);
-            border-radius: 6px;
-            resize: vertical;
-            font-size: 16px;
-            margin-bottom: 10px;
-            font-family: inherit;
-        }
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-        button#saveBtn {
-            width: 100%;
-            background-color: var(--primary-color);
-            color: var(--card-color);
-            border: none;
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.2s;
-        }
-        button#saveBtn:hover { 
-            background-color: var(--primary-dark); 
-        }
-        button#saveBtn:disabled { 
-            background-color: var(--border-color); 
-            color: var(--text-sub);
-            cursor: not-allowed; 
-        }
-
-        /* 全画面ローダー */
-        .loader-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: rgba(242, 250, 249, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-        }
-        .loader-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid var(--border-color);
-            border-top: 5px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-        .loader-text {
-            font-size: 14px;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* アコーディオンリスト */
-        .memo-list { display: flex; flex-direction: column; gap: 10px; }
-        
-        .memo-item {
-            background: var(--card-color);
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .memo-header {
-            padding: 10px 15px;
-            cursor: pointer;
+        header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: var(--card-color);
-            transition: background-color 0.2s;
-            user-select: none;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
         }
-        .memo-header:hover { 
-            background-color: var(--body-bg-color); 
+        header h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; }
+        header h1 i { color: var(--primary); }
+        .memo-count {
+            font-size: 12px; background: var(--primary-dark); color: var(--primary-hover);
+            padding: 4px 10px; border-radius: 20px; font-weight: bold; border: 1px solid var(--primary);
         }
+
+        .memo-form {
+            background: var(--bg-container); padding: 24px; border-radius: 12px;
+            border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .form-label { font-size: 12px; font-weight: bold; color: var(--text-sub); text-transform: uppercase; margin-bottom: 8px; display: block; letter-spacing: 1px; }
+        textarea {
+            width: 100%; height: 140px; padding: 14px; border: 1px solid var(--border);
+            background-color: var(--bg-input); color: var(--text-main); border-radius: 8px;
+            resize: vertical; font-size: 15px; font-family: monospace; margin-bottom: 15px;
+        }
+        textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 134, 115, 0.2); }
         
-        .memo-summary {
-            flex-grow: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-main);
-            margin-right: 15px;
+        button#saveBtn {
+            width: 100%; background-color: var(--primary); color: var(--text-main); border: none;
+            padding: 14px; font-size: 15px; border-radius: 8px; cursor: pointer; font-weight: 600;
+            display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s;
         }
+        button#saveBtn:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        button#saveBtn:disabled { background-color: var(--border); color: var(--text-sub); cursor: not-allowed; transform: none; }
+
+        /* 検索＆フィルター */
+        .filter-section {
+            background: var(--bg-container); padding: 20px; border-radius: 12px;
+            border: 1px solid var(--border); display: flex; flex-direction: column; gap: 15px;
+        }
+        .search-wrapper { position: relative; display: flex; align-items: center; }
+        .search-wrapper i { position: absolute; left: 14px; color: var(--text-sub); }
+        .search-input {
+            width: 100%; padding: 12px 12px 12px 40px; background: var(--bg-input);
+            border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 14px;
+        }
+        .search-input:focus { outline: none; border-color: var(--primary); }
         
-        .memo-info {
-            font-size: 11px;
-            color: var(--text-sub);
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 10px; /* ボタン同士の間隔を最適化 */
+        .tag-filter-container { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .filter-tag {
+            padding: 6px 14px; background: var(--bg-input); border: 1px solid var(--border);
+            color: var(--text-sub); border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
         }
+        .filter-tag:hover { border-color: var(--text-sub); color: var(--text-main); }
+        .filter-tag.active { background: var(--primary-dark); color: var(--primary-hover); border-color: var(--primary); }
 
-        .chevron {
-            transition: transform 0.3s;
-            font-size: 12px;
-            color: var(--border-color);
-            width: 14px;
-            text-align: center;
-        }
-
-        /* アクションボタン共通のベーススタイル */
-        .action-btn {
-            padding: 4px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: bold;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-
-        /* コピーボタンの固有スタイル */
-        .copy-btn {
-            background: var(--card-color);
-            color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        .copy-btn:hover { 
-            background: var(--primary-color); 
-            color: var(--card-color); 
-        }
-        .copy-btn.success {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: var(--text-main);
-        }
-
-        /* 修正：ヘッダー配置用の削除ボタン固有スタイル */
-        .delete-btn {
-            background: var(--card-color);
-            color: var(--danger-color);
-            border-color: var(--danger-color);
-        }
-        .delete-btn:hover {
-            background: var(--danger-color);
-            color: var(--card-color);
-        }
-
-        /* 開閉ボディ */
-        .memo-body {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            background-color: var(--body-bg-color);
-        }
-
-        .memo-item.open .memo-body {
-            max-height: 2000px;
-            border-top: 1px solid var(--border-color);
-        }
+        /* メモリスト */
+        .memo-list { display: flex; flex-direction: column; gap: 12px; }
+        .memo-item { background: var(--bg-container); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); transition: all 0.2s; }
+        .memo-item:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+        .memo-header { padding: 14px 18px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; }
+        .memo-header:hover { background-color: rgba(255, 255, 255, 0.02); }
+        .memo-summary { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
         
-        .memo-item.open .chevron { 
-            transform: rotate(180deg); 
-            color: var(--primary-color);
+        /* 動的タグバッジ */
+        .type-badge {
+            font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: bold;
+            background: var(--primary-dark); color: var(--primary-hover); border: 1px solid var(--primary);
+            text-transform: uppercase;
         }
 
-        .memo-content {
-            padding: 15px;
-            white-space: pre-wrap;
-            word-break: break-all;
-            font-size: 14px;
-            line-height: 1.6;
-            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-            color: var(--text-main);
-            background: var(--card-color);
-            margin: 12px;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
+        .memo-info { display: flex; align-items: center; gap: 12px; }
+        .memo-date { font-size: 11px; color: var(--text-sub); font-family: monospace; }
+
+        .btn-icon {
+            background: var(--bg-input); border: 1px solid var(--border); color: var(--text-sub);
+            width: 32px; height: 32px; border-radius: 6px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 13px;
         }
+        .btn-icon.copy-btn:hover { border-color: var(--primary); color: var(--primary-hover); background: var(--primary-dark); }
+        .btn-icon.copy-btn.success { background: var(--accent); border-color: var(--accent); color: var(--bg-main); }
+        .btn-icon.delete-btn:hover { border-color: var(--danger); color: var(--danger); background: rgba(255, 92, 92, 0.1); }
+        .chevron { transition: transform 0.3s; font-size: 12px; color: var(--text-sub); margin-left: 4px; }
+
+        .memo-body { max-height: 0; overflow: hidden; transition: max-height 0.3s cubic-bezier(0, 1, 0, 1); background-color: rgba(0, 0, 0, 0.15); }
+        .memo-item.open .memo-body { max-height: 3000px; border-top: 1px solid var(--border); transition: max-height 0.3s cubic-bezier(1, 0, 1, 0); }
+        .memo-item.open .chevron { transform: rotate(180deg); color: var(--primary); }
+        .memo-content { padding: 16px; white-space: pre-wrap; word-break: break-all; font-size: 13.5px; line-height: 1.6; font-family: monospace; color: #e0e6e5; background: var(--card-memo); margin: 16px; border-radius: 6px; border: 1px solid var(--border); }
+
+        /* ローダー */
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(30, 37, 36, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .loader-overlay.active { opacity: 1; pointer-events: auto; }
+        .spinner { width: 45px; height: 45px; border: 4px solid var(--border); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+        .loader-text { font-size: 13px; color: var(--text-sub); letter-spacing: 1px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <div id="loaderOverlay" class="loader-overlay">
     <div class="spinner"></div>
-    <div id="loaderText" class="loader-text">データを読み込み中...</div>
+    <div id="loaderText" class="loader-text">LOADING...</div>
 </div>
 
 <div class="container">
-    <h1><i class="fa-solid fa-cloud"></i> クラウド同期メモ</h1>
+    <header>
+        <h1><i class="fa-solid fa-vault"></i> CodeVault <span style="font-size:12px; color:var(--primary-hover); vertical-align:middle; margin-left:5px;">AI Tagged</span></h1>
+        <div id="memoCount" class="memo-count">0 Memos</div>
+    </header>
     
     <div class="memo-form">
-        <textarea id="memoInput" placeholder="メモを入力（1行目がプレビューになります）..."></textarea>
-        <button id="saveBtn" onclick="saveMemo()">保存する</button>
+        <label class="form-label">New Snippet / Note</label>
+        <textarea id="memoInput" placeholder="AIが自動で最適なタグを生成します。コードやメモを入力..."></textarea>
+        <button id="saveBtn" onclick="saveMemo()"><i class="fa-solid fa-plus"></i> 保存する</button>
+    </div>
+
+    <div class="filter-section">
+        <div class="search-wrapper">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="キーワードでスニペットを検索..." oninput="filterMemos()">
+        </div>
+        <div class="tag-filter-container" id="tagContainer"></div>
     </div>
 
     <div id="memoList" class="memo-list"></div>
 </div>
 
 <script>
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxwlxPU_IDxXWSurUGxk7z3PNm-Rceq4oc8br5JGc5DkWJCb_O9M4Rodg9Zt3TLrf7Psg/exec'; 
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzMuCOf7wEokJxPLuvn6t0BbWgCVXSzm_dvD2L0lsR1x1HFgyb-d3EvH7rFfkHfNt_ejA/exec'; 
 
     const memoInput = document.getElementById('memoInput');
     const saveBtn = document.getElementById('saveBtn');
     const memoList = document.getElementById('memoList');
     const loaderOverlay = document.getElementById('loaderOverlay');
     const loaderText = document.getElementById('loaderText');
+    const memoCountBadge = document.getElementById('memoCount');
+    const searchInput = document.getElementById('searchInput');
+    const tagContainer = document.getElementById('tagContainer');
+
+    let allMemos = [];
+    let currentSelectedTag = 'all';
 
     window.addEventListener('DOMContentLoaded', fetchMemos);
 
-    function showLoading(show, message = 'データを読み込み中...') {
-        loaderText.textContent = message;
+    function showLoading(show, message = 'LOADING...') {
+        loaderText.textContent = message.toUpperCase();
         if (show) {
             loaderOverlay.classList.add('active');
             saveBtn.disabled = true;
@@ -294,12 +188,15 @@
     }
 
     async function fetchMemos() {
-        showLoading(true, 'メモを読み込んでいます...');
+        showLoading(true, 'Fetching data...');
         try {
             const response = await fetch(GAS_WEB_APP_URL);
             const result = await response.json();
             if (result.status === 'success') {
-                renderMemos(result.data);
+                allMemos = result.data;
+                memoCountBadge.textContent = `${allMemos.length} Memos`;
+                updateTagFilters(); // 【新設】データに基づいてタグフィルターを再構築
+                filterMemos();
             }
         } catch (error) {
             console.error(error);
@@ -311,9 +208,9 @@
 
     async function saveMemo() {
         const content = memoInput.value.trim();
-        if (!content) return alert('メモが空欄です');
+        if (!content) return;
 
-        showLoading(true, 'メモを保存しています...');
+        showLoading(true, 'AI Analyzing & Saving...'); // AI解析中であることをローダーで明示
         try {
             const response = await fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
@@ -334,8 +231,7 @@
 
     async function deleteMemo(id) {
         if (!confirm('このメモを削除してもよろしいですか？')) return;
-
-        showLoading(true, 'メモを削除しています...');
+        showLoading(true, 'Deleting item...');
         try {
             const response = await fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
@@ -344,69 +240,107 @@
             const result = await response.json();
             if (result.status === 'success') {
                 await fetchMemos(); 
-            } else {
-                alert('削除エラー: ' + result.message);
             }
         } catch (error) {
             console.error(error);
-            alert('削除中に通信エラーが発生しました。');
+            alert('通信エラーが発生しました。');
         } finally {
             showLoading(false);
         }
     }
 
-    // 修正：ヘッダー内へのアクション集約ロジック
+    // ーーー 新設：スプレッドシート内の全データから存在するタグを抽出してフィルターを動的生成 ーーー
+    function updateTagFilters() {
+        // 全メモから重複のないタグのリストを作成
+        const tags = new Set();
+        allMemos.forEach(memo => {
+            if (memo.tag) tags.add(memo.tag.trim());
+        });
+
+        // フィルターエリアの初期化
+        tagContainer.innerHTML = '';
+
+        // 「All」タブを生成
+        const allTagEl = document.createElement('span');
+        allTagEl.className = `filter-tag ${currentSelectedTag === 'all' ? 'active' : ''}`;
+        allTagEl.textContent = 'All';
+        allTagEl.onclick = () => selectTag('all', allTagEl);
+        tagContainer.appendChild(allTagEl);
+
+        // AIが生成したユニークなタグをループしてボタン化
+        tags.forEach(tag => {
+            if(tag.toLowerCase() === 'all') return; // バグ防止
+            const tagEl = document.createElement('span');
+            tagEl.className = `filter-tag ${currentSelectedTag === tag ? 'active' : ''}`;
+            tagEl.textContent = tag;
+            tagEl.onclick = () => selectTag(tag, tagEl);
+            tagContainer.appendChild(tagEl);
+        });
+    }
+
+    function selectTag(tag, element) {
+        document.querySelectorAll('.filter-tag').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+        currentSelectedTag = tag;
+        filterMemos();
+    }
+
+    function filterMemos() {
+        const keyword = searchInput.value.toLowerCase().trim();
+
+        const filtered = allMemos.filter(memo => {
+            const matchesKeyword = memo.content.toLowerCase().includes(keyword);
+            const matchesTag = (currentSelectedTag === 'all' || memo.tag === currentSelectedTag);
+            return matchesKeyword && matchesTag;
+        });
+
+        renderMemos(filtered);
+    }
+
     function renderMemos(memos) {
         memoList.innerHTML = '';
         if (memos.length === 0) {
-            memoList.innerHTML = `<p style="text-align:center; color: var(--text-sub);">メモはありません。</p>`;
+            memoList.innerHTML = `<p style="text-align:center; padding: 40px; color: var(--text-sub); font-size: 14px;"><i class="fa-regular fa-folder-open"></i> 一致するメモが見つかりません。</p>`;
             return;
         }
 
         memos.forEach(memo => {
-            const date = new Date(memo.timestamp).toLocaleString('ja-JP', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-            const firstLine = memo.content.split('\n')[0] || '(空のメモ)';
-
+            const dateObj = new Date(memo.timestamp);
+            const dateStr = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${dateObj.getHours().toString().padStart(2,'0')}:${dateObj.getMinutes().toString().padStart(2,'0')}`;
+            const firstLine = memo.content.split('\n')[0] || '(Empty)';
+            
             const memoItem = document.createElement('div');
             memoItem.className = 'memo-item';
             
-            // 1. コピーボタンの生成
             const copyBtn = document.createElement('button');
-            copyBtn.className = 'action-btn copy-btn';
-            copyBtn.textContent = 'コピー';
-            copyBtn.onclick = (e) => {
-                e.stopPropagation(); // アコーディオンの開閉を防ぐ
-                copyToClipboard(copyBtn, memo.content);
-            };
+            copyBtn.className = 'btn-icon copy-btn';
+            copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+            copyBtn.onclick = (e) => { e.stopPropagation(); copyToClipboard(copyBtn, memo.content); };
 
-            // 2. 削除ボタンの生成（ヘッダー配置用に移動・修正）
             const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'action-btn delete-btn';
-            deleteBtn.innerHTML = '<i class="fa-regular fa-trash-can"></i>'; // スペース節約のためアイコンのみに調整
-            deleteBtn.title = '削除';
-            deleteBtn.onclick = (e) => {
-                e.stopPropagation(); // アコーディオンの開閉を防ぐ
-                deleteMemo(memo.id);
-            };
+            deleteBtn.className = 'btn-icon delete-btn';
+            deleteBtn.innerHTML = '<i class="fa-regular fa-trash-can"></i>';
+            deleteBtn.onclick = (e) => { e.stopPropagation(); deleteMemo(memo.id); };
 
-            // アコーディオン：ヘッダー部分
             const header = document.createElement('div');
             header.className = 'memo-header';
             
             const summaryDiv = document.createElement('div');
             summaryDiv.className = 'memo-summary';
-            summaryDiv.textContent = firstLine;
+            
+            // 修正：AIが生成したタグをそのままバッジに反映
+            summaryDiv.innerHTML = `<span class="type-badge">${escapeHtml(memo.tag)}</span> <span>${escapeHtml(firstLine)}</span>`;
 
             const infoDiv = document.createElement('div');
             infoDiv.className = 'memo-info';
             
             const dateSpan = document.createElement('span');
-            dateSpan.textContent = date;
+            dateSpan.className = 'memo-date';
+            dateSpan.textContent = dateStr;
 
             const chevronIcon = document.createElement('i');
             chevronIcon.className = 'fa-solid fa-chevron-down chevron';
 
-            // 右側のインフォ枠に、日付・コピー・削除・矢印の順で横並びにアペンド
             infoDiv.appendChild(dateSpan);
             infoDiv.appendChild(copyBtn);
             infoDiv.appendChild(deleteBtn);
@@ -416,7 +350,6 @@
             header.appendChild(infoDiv);
             header.onclick = () => memoItem.classList.toggle('open');
 
-            // アコーディオン：ボディ部分（削除ボタンをヘッダーに移したためシンプル化）
             const body = document.createElement('div');
             body.className = 'memo-body';
 
@@ -425,7 +358,6 @@
             contentDiv.textContent = memo.content;
 
             body.appendChild(contentDiv);
-            
             memoItem.appendChild(header);
             memoItem.appendChild(body);
             memoList.appendChild(memoItem);
@@ -434,14 +366,17 @@
 
     function copyToClipboard(btn, text) {
         navigator.clipboard.writeText(text).then(() => {
-            const originalText = btn.innerText;
-            btn.innerText = 'OK!';
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
             btn.classList.add('success');
             setTimeout(() => { 
-                btn.innerText = originalText; 
+                btn.innerHTML = '<i class="fa-regular fa-copy"></i>'; 
                 btn.classList.remove('success');
             }, 1200);
         });
+    }
+
+    function escapeHtml(str) {
+        return str ? str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])) : '';
     }
 </script>
 </body>
