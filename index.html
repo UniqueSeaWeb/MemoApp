@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>クラウド同期メモ (ヘッダーコピー版)</title>
+    <title>クラウド同期メモ (削除機能実装版)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         /* ーーー カラーパレット定義 ーーー */
@@ -18,6 +18,7 @@
             --text-sub: #585858;           /* 副テキスト */
             --border-color: #d5d5d5;       /* 枠線 */
             --body-bg-color: #f8f8f8;       /* アコーディオン内部背景 */
+            --danger-color: #d9534f;       /* 削除ボタン用（マイルドな赤） */
         }
 
         body {
@@ -139,7 +140,6 @@
             border: 1px solid var(--border-color);
         }
 
-        /* 修正：ヘッダー内部のレイアウト調整 */
         .memo-header {
             padding: 10px 15px;
             cursor: pointer;
@@ -171,7 +171,7 @@
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 12px; /* 各要素の間隔を調整 */
+            gap: 12px;
         }
 
         .chevron {
@@ -182,7 +182,7 @@
             text-align: center;
         }
 
-        /* 修正：ヘッダー内コピーボタンのスタイル調整 */
+        /* コピーボタン */
         .copy-btn {
             background: var(--card-color);
             color: var(--primary-color);
@@ -231,9 +231,33 @@
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
             color: var(--text-main);
             background: var(--card-color);
-            margin: 12px;
+            margin: 12px 12px 5px 12px; /* 下のマージンを調整 */
             border-radius: 4px;
             border: 1px solid var(--border-color);
+        }
+
+        /* 追加：展開フッター（削除ボタン配置用） */
+        .memo-body-footer {
+            padding: 5px 12px 12px 12px;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        /* 追加：削除ボタンのスタイル */
+        .delete-btn {
+            background: transparent;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .delete-btn:hover {
+            background: var(--danger-color);
+            color: var(--card-color);
         }
     </style>
 </head>
@@ -256,7 +280,7 @@
 </div>
 
 <script>
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxwlxPU_IDxXWSurUGxk7z3PNm-Rceq4oc8br5JGc5DkWJCb_O9M4Rodg9Zt3TLrf7Psg/exec'; 
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/library/d/1CZFpSaP3IdwiYaqFDfk9QpwF81kBkZeIrkjV2InTKbwrovUDjN2HBTvu/2'; 
 
     const memoInput = document.getElementById('memoInput');
     const saveBtn = document.getElementById('saveBtn');
@@ -316,7 +340,30 @@
         }
     }
 
-    // 修正：HTML構築ロジックの変更
+    // 追加：メモの削除処理 (POST経由でactionを投げる)
+    async function deleteMemo(id) {
+        if (!confirm('このメモを削除してもよろしいですか？')) return;
+
+        showLoading(true, 'メモを削除しています...');
+        try {
+            const response = await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'delete', id: id })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                await fetchMemos(); // 一覧の再読み込み
+            } else {
+                alert('削除エラー: ' + result.message);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('削除中に通信エラーが発生しました。');
+        } finally {
+            showLoading(false);
+        }
+    }
+
     function renderMemos(memos) {
         memoList.innerHTML = '';
         if (memos.length === 0) {
@@ -331,12 +378,11 @@
             const memoItem = document.createElement('div');
             memoItem.className = 'memo-item';
             
-            // コピーボタンを生成
+            // コピーボタン
             const copyBtn = document.createElement('button');
             copyBtn.className = 'copy-btn';
             copyBtn.textContent = 'コピー';
             copyBtn.onclick = (e) => {
-                // 【重要】親要素（header）へのクリックイベント伝播を止め、アコーディオンが勝手に開閉するのを防ぐ
                 e.stopPropagation(); 
                 copyToClipboard(copyBtn, memo.content);
             };
@@ -345,12 +391,10 @@
             const header = document.createElement('div');
             header.className = 'memo-header';
             
-            // 左側：プレビューテキスト
             const summaryDiv = document.createElement('div');
             summaryDiv.className = 'memo-summary';
             summaryDiv.textContent = firstLine;
 
-            // 右側：インフォ情報（日付、コピーボタン、矢印）
             const infoDiv = document.createElement('div');
             infoDiv.className = 'memo-info';
             
@@ -360,9 +404,8 @@
             const chevronIcon = document.createElement('i');
             chevronIcon.className = 'fa-solid fa-chevron-down chevron';
 
-            // 右側のインフォ枠に各要素をアペンド
             infoDiv.appendChild(dateSpan);
-            infoDiv.appendChild(copyBtn); // コピーボタンをここに挿入
+            infoDiv.appendChild(copyBtn);
             infoDiv.appendChild(chevronIcon);
 
             header.appendChild(summaryDiv);
@@ -377,7 +420,21 @@
             contentDiv.className = 'memo-content';
             contentDiv.textContent = memo.content;
 
+            // 修正：ボディ用フッター（削除ボタンの追加）
+            const bodyFooter = document.createElement('div');
+            bodyFooter.className = 'memo-body-footer';
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.innerHTML = '<i class="fa-regular fa-trash-can"></i> 削除';
+            deleteBtn.onclick = () => {
+                deleteMemo(memo.id); // スプレッドシート側のIDを渡して削除実行
+            };
+
+            bodyFooter.appendChild(deleteBtn);
+
             body.appendChild(contentDiv);
+            body.appendChild(bodyFooter); // 削除ボタンエリアを追加
             
             memoItem.appendChild(header);
             memoItem.appendChild(body);
