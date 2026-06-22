@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>クラウド同期メモ (カラーテーマ反映版)</title>
+    <title>クラウド同期メモ (ヘッダーコピー版)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         /* ーーー カラーパレット定義 ーーー */
@@ -95,7 +95,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(242, 250, 249, 0.85); /* 全体背景の透過 */
+            background-color: rgba(242, 250, 249, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -139,8 +139,9 @@
             border: 1px solid var(--border-color);
         }
 
+        /* 修正：ヘッダー内部のレイアウト調整 */
         .memo-header {
-            padding: 14px 15px;
+            padding: 10px 15px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -170,13 +171,37 @@
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px; /* 各要素の間隔を調整 */
         }
 
         .chevron {
             transition: transform 0.3s;
             font-size: 12px;
             color: var(--border-color);
+            width: 14px;
+            text-align: center;
+        }
+
+        /* 修正：ヘッダー内コピーボタンのスタイル調整 */
+        .copy-btn {
+            background: var(--card-color);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { 
+            background: var(--primary-color); 
+            color: var(--card-color); 
+        }
+        .copy-btn.success {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-main);
         }
 
         /* 開閉ボディ */
@@ -206,39 +231,9 @@
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
             color: var(--text-main);
             background: var(--card-color);
-            margin: 10px;
+            margin: 12px;
             border-radius: 4px;
             border: 1px solid var(--border-color);
-        }
-
-        .memo-footer {
-            padding: 10px 15px;
-            display: flex;
-            justify-content: flex-end;
-            background: var(--body-bg-color);
-        }
-
-        /* コピーボタン */
-        .copy-btn {
-            background: var(--card-color);
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-            padding: 6px 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-        .copy-btn:hover { 
-            background: var(--primary-color); 
-            color: var(--card-color); 
-        }
-        /* コピー成功時（アクセントのゴールドを背景に適用） */
-        .copy-btn.success {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: var(--text-main);
         }
     </style>
 </head>
@@ -321,6 +316,7 @@
         }
     }
 
+    // 修正：HTML構築ロジックの変更
     function renderMemos(memos) {
         memoList.innerHTML = '';
         if (memos.length === 0) {
@@ -335,17 +331,45 @@
             const memoItem = document.createElement('div');
             memoItem.className = 'memo-item';
             
+            // コピーボタンを生成
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.textContent = 'コピー';
+            copyBtn.onclick = (e) => {
+                // 【重要】親要素（header）へのクリックイベント伝播を止め、アコーディオンが勝手に開閉するのを防ぐ
+                e.stopPropagation(); 
+                copyToClipboard(copyBtn, memo.content);
+            };
+
+            // アコーディオン：ヘッダー部分
             const header = document.createElement('div');
             header.className = 'memo-header';
-            header.innerHTML = `
-                <div class="memo-summary">${escapeHtml(firstLine)}</div>
-                <div class="memo-info">
-                    <span>${date}</span>
-                    <i class="fa-solid fa-chevron-down chevron"></i>
-                </div>
-            `;
+            
+            // 左側：プレビューテキスト
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'memo-summary';
+            summaryDiv.textContent = firstLine;
+
+            // 右側：インフォ情報（日付、コピーボタン、矢印）
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'memo-info';
+            
+            const dateSpan = document.createElement('span');
+            dateSpan.textContent = date;
+
+            const chevronIcon = document.createElement('i');
+            chevronIcon.className = 'fa-solid fa-chevron-down chevron';
+
+            // 右側のインフォ枠に各要素をアペンド
+            infoDiv.appendChild(dateSpan);
+            infoDiv.appendChild(copyBtn); // コピーボタンをここに挿入
+            infoDiv.appendChild(chevronIcon);
+
+            header.appendChild(summaryDiv);
+            header.appendChild(infoDiv);
             header.onclick = () => memoItem.classList.toggle('open');
 
+            // アコーディオン：ボディ部分
             const body = document.createElement('div');
             body.className = 'memo-body';
 
@@ -353,20 +377,7 @@
             contentDiv.className = 'memo-content';
             contentDiv.textContent = memo.content;
 
-            const footer = document.createElement('div');
-            footer.className = 'memo-footer';
-            
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-btn';
-            copyBtn.textContent = 'コピー';
-            copyBtn.onclick = (e) => {
-                e.stopPropagation();
-                copyToClipboard(copyBtn, memo.content);
-            };
-
-            footer.appendChild(copyBtn);
             body.appendChild(contentDiv);
-            body.appendChild(footer);
             
             memoItem.appendChild(header);
             memoItem.appendChild(body);
@@ -377,17 +388,13 @@
     function copyToClipboard(btn, text) {
         navigator.clipboard.writeText(text).then(() => {
             const originalText = btn.innerText;
-            btn.innerText = 'コピー完了！';
-            btn.classList.add('success'); // アクセントのイエローゴールドスタイルを適用
+            btn.innerText = 'OK!';
+            btn.classList.add('success');
             setTimeout(() => { 
                 btn.innerText = originalText; 
                 btn.classList.remove('success');
-            }, 1500);
+            }, 1200);
         });
-    }
-
-    function escapeHtml(str) {
-        return str ? str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])) : '';
     }
 </script>
 </body>
