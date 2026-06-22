@@ -86,6 +86,12 @@
             word-break: break-all;
             margin-bottom: 25px;
             font-size: 15px;
+            /* コードが見やすいように等幅フォントを適用 */
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
         }
         .memo-footer {
             display: flex;
@@ -115,7 +121,7 @@
     <h1>クラウド同期メモ</h1>
     
     <div class="memo-form">
-        <textarea id="memoInput" placeholder="ここにメモを入力してください..."></textarea>
+        <textarea id="memoInput" placeholder="ここにメモ（HTMLコードなども可）を入力してください..."></textarea>
         <button id="saveBtn" onclick="saveMemo()">保存する</button>
     </div>
 
@@ -135,7 +141,6 @@
     const memoList = document.getElementById('memoList');
     const loading = document.getElementById('loading');
 
-    // 初期読み込み
     window.addEventListener('DOMContentLoaded', fetchMemos);
 
     function showLoading(show) {
@@ -157,7 +162,7 @@
             }
         } catch (error) {
             console.error(error);
-            alert('通信エラーが発生しました。URLが正しいか確認してください。');
+            alert('通信エラーが発生しました。');
         } finally {
             showLoading(false);
         }
@@ -177,8 +182,8 @@
             const result = await response.json();
 
             if (result.status === 'success') {
-                memoInput.value = ''; // 入力欄をクリア
-                await fetchMemos();   // 一覧を再更新
+                memoInput.value = '';
+                await fetchMemos();
             } else {
                 alert('保存エラー: ' + result.message);
             }
@@ -190,7 +195,7 @@
         }
     }
 
-    // 画面への描画
+    // 画面への描画（修正ポイント）
     function renderMemos(memos) {
         memoList.innerHTML = '';
         if (memos.length === 0) {
@@ -200,16 +205,39 @@
 
         memos.forEach(memo => {
             const date = new Date(memo.timestamp).toLocaleString('ja-JP');
+            
+            // 1. 各メモの枠（親要素）を作成
             const memoItem = document.createElement('div');
             memoItem.className = 'memo-item';
             
-            memoItem.innerHTML = `
-                <div class="memo-content">${escapeHtml(memo.content)}</div>
-                <div class="memo-footer">
-                    <span>${date}</span>
-                    <button class="copy-btn" onclick="copyToClipboard(this, \`${escapeJs(memo.content)}\`)">コピー</button>
-                </div>
-            `;
+            // 2. メモ本文の領域を作成し、textContent で安全に文字列として挿入
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'memo-content';
+            contentDiv.textContent = memo.content; // HTMLタグも含めて「ただの文字列」として表示される
+            
+            // 3. フッター領域（日付とコピーボタン）を作成
+            const footerDiv = document.createElement('div');
+            footerDiv.className = 'memo-footer';
+            
+            const dateSpan = document.createElement('span');
+            dateSpan.textContent = date;
+            
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.textContent = 'コピー';
+            
+            // 引数で渡さず、クリック時に直上の contentDiv からテキストを取得する形に変更
+            copyBtn.onclick = function() {
+                copyToClipboard(this, contentDiv.textContent);
+            };
+            
+            // 4. 要素を組み立てて画面に配置
+            footerDiv.appendChild(dateSpan);
+            footerDiv.appendChild(copyBtn);
+            
+            memoItem.appendChild(contentDiv);
+            memoItem.appendChild(footerDiv);
+            
             memoList.appendChild(memoItem);
         });
     }
@@ -229,16 +257,6 @@
         }).catch(err => {
             alert('コピーに失敗しました');
         });
-    }
-
-    // エスケープ処理（セキュリティ対策）
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-    function escapeJs(str) {
-        if (!str) return '';
-        return str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
     }
 </script>
 </body>
